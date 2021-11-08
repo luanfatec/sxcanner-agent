@@ -1,0 +1,5 @@
+argparse
+mysql-connector-python
+uuid
+MySQLdb
+datetime
