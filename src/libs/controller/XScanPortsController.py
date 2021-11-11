@@ -11,6 +11,8 @@ from controller import XScanHistoryPortController
 # Other libs
 import socket
 import nmap
+from threading import Thread
+
 
 class XScanPortsController (object):
     def __init__(self):
@@ -39,6 +41,40 @@ class XScanPortsController (object):
         else:
             return False
             client.close()
+            
+    def advanced_scan_aux(self, dbport):
+        # Criando scanner
+        pscan = nmap.PortScanner()                
+        th_pscan = Thread(target=pscan.scan, args=(dbport["host"], dbport["ports"], "-T5 -A"))
+        th_pscan.start()
+
+        # Filtrando os resultados... set_history_host_scan(self, id_port, port, onoroff, host, temp_history, id_user)
+        for host, ports in [(host, pscan[host]["tcp"]) for host in pscan.all_hosts()]:  
+            # ... 
+            for port, state, name, version, product, allports \
+                in [(pport, ports[pport]["state"], ports[pport]["name"], ports[pport]["version"], ports[pport]["product"], ports[pport]) for pport in ports]: 
+
+                template = ""
+                if "script" in allports.keys():
+                    if "http-title" in allports.keys():
+                        # Criando template description
+                        template = f"""Port {port} is {state} service {name} version {version}\n-----\nHeader\n{allports["script"]["http-title"]}\n{allports["script"]["http-server-header"]}"""
+
+                    else:                        
+                        template = f"""Port {port} is {state} service {name} version {version}\n-----\n{allports["script"]}"""
+                    # Salvando o histórico do scan
+                    historyController.set_history_host_scan(\
+                        id_user=dbport['id_user'],host=dbport['host'], id_port=dbport['id'], onoroff=1, port=port, temp_history=dbport['temp_history'], description=template)
+                    
+                else:
+                    # Criando template description
+                    template = f"""Port {port} is {state} service {name} version {version} - {product}"""
+                    # Salvando o histórico do scan
+                    historyController.set_history_host_scan(\
+                        id_user=dbport['id_user'],host=dbport['host'], id_port=dbport['id'], onoroff=1, port=port, temp_history=dbport['temp_history'], description=template)
+
+        # Concluindo a porta..
+        self.set_is_scan(idport=dbport['id'], is_scan=1)
 
     def test_advanced_ports(self):
 
@@ -48,39 +84,9 @@ class XScanPortsController (object):
         # Portas do DB
         dbports = self.get_ports();
         for dbport in dbports:
-            if dbport["type_scan"] == "complex_ports":                
+            if dbport["type_scan"] == "complex_ports":
+                th_advanced_scan = Thread(target=self.advanced_scan_aux, args=(dbport,))
+                th_advanced_scan.start()
 
-                # Criando scanner
-                pscan = nmap.PortScanner()
-                pscan.scan(dbport["host"], dbport["ports"], arguments="-T5 -A")
-
-                # Filtrando os resultados... set_history_host_scan(self, id_port, port, onoroff, host, temp_history, id_user)
-                for host, ports in [(host, pscan[host]["tcp"]) for host in pscan.all_hosts()]:  
-                    # ... 
-                    for port, state, name, version, product, allports \
-                        in [(pport, ports[pport]["state"], ports[pport]["name"], ports[pport]["version"], ports[pport]["product"], ports[pport]) for pport in ports]: 
-
-                        template = ""
-
-                        if "script" in allports.keys():
-                            if "http-title" in allports.keys():
-                                # Criando template description
-                                template = f"""Port {port} is {state} service {name} version {version}\n-----\nHeader\n{allports["script"]["http-title"]}\n{allports["script"]["http-server-header"]}"""
-
-                            else:
-                                
-                                template = f"""Port {port} is {state} service {name} version {version}\n-----\n{allports["script"]}"""
-                            # Salvando o histórico do scan
-                            historyController.set_history_host_scan(\
-                                id_user=dbport['id_user'],host=dbport['host'], id_port=dbport['id'], onoroff=1, port=port, temp_history=dbport['temp_history'], description=template)
-                            
-                        else:
-                            # Criando template description
-                            template = f"""Port {port} is {state} service {name} version {version} - {product}"""
-                            # Salvando o histórico do scan
-                            historyController.set_history_host_scan(\
-                                id_user=dbport['id_user'],host=dbport['host'], id_port=dbport['id'], onoroff=1, port=port, temp_history=dbport['temp_history'], description=template)
-
-                # Concluindo a porta..
-                self.set_is_scan(idport=dbport['id'], is_scan=1)
+                
                             

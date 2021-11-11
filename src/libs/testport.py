@@ -41,7 +41,6 @@ elif arguments.type == "complex_ports":
     portController = XScanPortsController.XScanPortsController()
     portController.test_advanced_ports()
 
-
 # ...
 elif arguments.type == "check_history_ports":
     # ...   
