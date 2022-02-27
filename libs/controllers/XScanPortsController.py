@@ -52,7 +52,6 @@ class XScanPortsController (object):
 
         # Filtrando os resultados... 
         for host, ports in [(host, pscan[host]["tcp"]) for host in pscan.all_hosts()]:
-            print(host) 
             # ... 
             for port, state, name, version, product, allports \
                 in [(pport, ports[pport]["state"], ports[pport]["name"], ports[pport]["version"], ports[pport]["product"], ports[pport]) for pport in ports]: 
@@ -62,10 +61,8 @@ class XScanPortsController (object):
                     if "http-title" in allports.keys():
                         # Criando template description
                         template = f"""Port {port} is {state} service {name} version {version}\n-----\nHeader\n{allports["script"]["http-title"]}\n{allports["script"]["http-server-header"]}"""
-                        print(template)
                     else:                        
                         template = f"""Port {port} is {state} service {name} version {version}\n-----\n{allports["script"]}"""
-                        print(template)
                     # Salvando o histórico do scan
                     historyController.set_history_host_scan(\
                         id_user=dbport['id_user'],host=dbport['host'], id_port=dbport['id'],\
@@ -74,14 +71,13 @@ class XScanPortsController (object):
                 else:
                     # Criando template description
                     template = f"""Port {port} is {state} service {name} version {version} - {product}"""
-                    print(template)
                     # Salvando o histórico do scan
                     historyController.set_history_host_scan(\
                         id_user=dbport['id_user'],host=dbport['host'], id_port=dbport['id'],\
                         onoroff=1, port=port, temp_history=dbport['temp_history'], description=template)
 
         # Concluindo a porta..
-        #self.set_is_scan(idport=dbport['id'], is_scan=1)
+        self.set_is_scan(idport=dbport['id'], is_scan=1)
 
     def test_advanced_ports(self):
 
@@ -92,9 +88,7 @@ class XScanPortsController (object):
         dbports = self.get_ports(type_scan="complex_port");
         ps_pool = Pool(5)
         for dbport in dbports:
-            #th_advanced_scan = Thread(target=self.advanced_scan_aux, args=(dbport, historyController))
             ps_pool.apply_async(self.advanced_scan_aux, args=(dbport, historyController,))
-            # th_advanced_scan.start()
         ps_pool.close()
         ps_pool.join()
                 
