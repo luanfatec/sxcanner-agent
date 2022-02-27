@@ -1,4 +1,4 @@
-/xscanner-agent/libs/models/__pycache__
-/xscanner-agent/libs/__pycache__
-/xscanner-agent/libs/controllers/__pycache__
-/xscanner-agent/libs/db/__pycache__
+libs/models/__pycache__
+/libs/__pycache__
+/libs/controllers/__pycache__
+/libs/db/__pycache__
